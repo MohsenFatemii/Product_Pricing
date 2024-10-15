@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flexible Juice Shop Pricing Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 200px;
+        }
+        input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-right: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flexible Juice Shop Pricing Calculator</h1>
+    
+    <div class="input-group">
+        <label for="numItems">Number of items:</label>
+        <input type="number" id="numItems" min="1" value="1">
+    </div>
+    <div class="input-group">
+        <label for="taxRate">Tax Rate (%):</label>
+        <input type="number" id="taxRate" min="0" max="100" step="0.1" value="30">
+    </div>
+    <div class="input-group">
+        <label for="otherExpensesRate">Other Expenses Rate (%):</label>
+        <input type="number" id="otherExpensesRate" min="0" max="100" step="0.1" value="10">
+    </div>
+    <div class="input-group">
+        <label for="targetProfitMargin">Target Profit Margin (%):</label>
+        <input type="number" id="targetProfitMargin" min="0" max="100" step="0.1" value="20">
+    </div>
+    <div class="input-group">
+        <label for="rent">Rent:</label>
+        <input type="number" id="rent" min="0" step="0.01" value="60000">
+    </div>
+    <div class="input-group">
+        <label for="salesPerDay">Sales Per Day:</label>
+        <input type="number" id="salesPerDay" min="1" value="100">
+    </div>
+
+    <button onclick="generateInputs()">Generate Item Inputs</button>
+    
+    <div id="itemInputs"></div>
+    <button onclick="calculatePrices()">Calculate Prices</button>
+    <div id="results"></div>
+
+    <script>
+        function generateInputs() {
+            const numItems = parseInt(document.getElementById('numItems').value);
+            let inputsHtml = '<h2>Enter Base Costs</h2>';
+            for (let i = 1; i <= numItems; i++) {
+                inputsHtml += `<div class="input-group">
+                    <label for="cost${i}">Item ${i} Base Cost:</label>
+                    <input type="number" id="cost${i}" min="0" step="0.01">
+                </div>`;
+            }
+            document.getElementById('itemInputs').innerHTML = inputsHtml;
+        }
+
+        function calculatePrices() {
+            const numItems = parseInt(document.getElementById('numItems').value);
+            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
+            const otherExpensesRate = parseFloat(document.getElementById('otherExpensesRate').value) / 100;
+            const targetProfitMargin = parseFloat(document.getElementById('targetProfitMargin').value) / 100;
+            const rent = parseFloat(document.getElementById('rent').value);
+            const salesPerDay = parseInt(document.getElementById('salesPerDay').value);
+
+            const baseCosts = [];
+            for (let i = 1; i <= numItems; i++) {
+                baseCosts.push(parseFloat(document.getElementById(`cost${i}`).value));
+            }
+
+            let prices = baseCosts.map(cost => cost * 2);
+
+            function calculateProfit(prices) {
+                const revenue = prices.reduce((sum, price) => sum + price * salesPerDay, 0);
+                const costs = baseCosts.reduce((sum, cost) => sum + cost * salesPerDay, 0) + 
+                              rent + taxRate * revenue + otherExpensesRate * revenue;
+                return revenue - costs;
+            }
+
+            while (calculateProfit(prices) < targetProfitMargin * prices.reduce((sum, price) => sum + price * salesPerDay, 0)) {
+                prices = prices.map(price => price * 1.01);
+            }
+
+            const totalRevenue = prices.reduce((sum, price) => sum + price * salesPerDay, 0);
+            const totalCost = baseCosts.reduce((sum, cost) => sum + cost * salesPerDay, 0) + 
+                              rent + taxRate * totalRevenue + otherExpensesRate * totalRevenue;
+            const profit = totalRevenue - totalCost;
+            const profitMargin = (profit / totalRevenue) * 100;
+
+            let resultsHtml = '<h2>Results</h2><table><tr><th>Item</th><th>Base Cost</th><th>Calculated Price</th></tr>';
+            for (let i = 0; i < numItems; i++) {
+                resultsHtml += `<tr><td>Item ${i + 1}</td><td>$${baseCosts[i].toFixed(2)}</td><td>$${prices[i].toFixed(2)}</td></tr>`;
+            }
+            resultsHtml += '</table>';
+            resultsHtml += `<p>Overall Profit Margin: ${profitMargin.toFixed(2)}%</p>`;
+            resultsHtml += `<p>Total Daily Revenue: $${totalRevenue.toFixed(2)}</p>`;
+            resultsHtml += `<p>Total Daily Cost: $${totalCost.toFixed(2)}</p>`;
+            resultsHtml += `<p>Daily Profit: $${profit.toFixed(2)}</p>`;
+
+            document.getElementById('results').innerHTML = resultsHtml;
+        }
+    </script>
+</body>
+</html>
