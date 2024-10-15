@@ -53,6 +53,10 @@
         th {
             background-color: #f2f2f2;
         }
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -135,11 +139,25 @@
                 return revenue - costs;
             }
 
-            while (calculateProfit(prices) < targetProfitMargin * prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0)) {
+            let iterations = 0;
+            const maxIterations = 1000;
+            let targetReached = false;
+
+            while (iterations < maxIterations) {
+                const profit = calculateProfit(prices);
+                const currentProfitMargin = profit / prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
+
+                if (currentProfitMargin >= targetProfitMargin) {
+                    targetReached = true;
+                    break;
+                }
+
                 prices = prices.map((price, index) => {
                     const newPrice = price * (items[index].popularity === 'popular' ? 1.015 : 1.01);
                     return Math.min(newPrice, items[index].baseCost * 4.99);
                 });
+
+                iterations++;
             }
 
             const totalRevenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
@@ -148,7 +166,13 @@
             const profit = totalRevenue - totalCost;
             const profitMargin = (profit / totalRevenue) * 100;
 
-            let resultsHtml = '<h2>Results</h2><table><tr><th>Item</th><th>Base Cost</th><th>Calculated Price</th><th>Sales Per Day</th><th>Popularity</th><th>Daily Revenue</th></tr>';
+            let resultsHtml = '<h2>Results</h2>';
+            
+            if (!targetReached) {
+                resultsHtml += '<p class="warning">Warning: The target profit margin could not be reached within the price constraints.</p>';
+            }
+
+            resultsHtml += '<table><tr><th>Item</th><th>Base Cost</th><th>Calculated Price</th><th>Sales Per Day</th><th>Popularity</th><th>Daily Revenue</th></tr>';
             for (let i = 0; i < numItems; i++) {
                 const dailyRevenue = prices[i] * items[i].salesPerDay;
                 resultsHtml += `<tr>
