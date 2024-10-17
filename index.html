@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ماشین حساب قیمت‌گذاری</title>
+    <title>ماشین حساب پیشرفته قیمت‌گذاری مغازه آبمیوه</title>
     <style>
         body {
             font-family: Tahoma, Arial, sans-serif;
@@ -57,10 +57,13 @@
             color: #e74c3c;
             font-weight: bold;
         }
+        .sales-number {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>ماشین حساب قیمت‌گذاری</h1>
+    <h1>ماشین حساب پیشرفته قیمت‌گذاری مغازه آبمیوه</h1>
     
     <div class="input-group">
         <label for="numItems">تعداد اقلام:</label>
@@ -102,13 +105,6 @@
                 <div class="input-group">
                     <label for="sales${i}">فروش روزانه قلم ${i}:</label>
                     <input type="number" id="sales${i}" min="0" value="100">
-                </div>
-                <div class="input-group">
-                    <label for="popularity${i}">محبوبیت قلم ${i}:</label>
-                    <select id="popularity${i}">
-                        <option value="normal">معمولی</option>
-                        <option value="popular">محبوب</option>
-                    </select>
                 </div>`;
             }
             document.getElementById('itemInputs').innerHTML = inputsHtml;
@@ -120,46 +116,18 @@
             const otherExpensesRate = parseFloat(document.getElementById('otherExpensesRate').value) / 100;
             const targetProfitMargin = parseFloat(document.getElementById('targetProfitMargin').value) / 100;
             const monthlyRent = parseFloat(document.getElementById('rent').value);
-            const dailyRent = monthlyRent / 30; // Assuming 30 days per month
+            const dailyRent = monthlyRent / 30;
 
             const items = [];
             for (let i = 1; i <= numItems; i++) {
                 items.push({
                     baseCost: parseFloat(document.getElementById(`cost${i}`).value),
-                    salesPerDay: parseInt(document.getElementById(`sales${i}`).value),
-                    popularity: document.getElementById(`popularity${i}`).value
+                    salesPerDay: parseInt(document.getElementById(`sales${i}`).value)
                 });
             }
 
-            let prices = items.map(item => Math.min(item.baseCost * (item.popularity === 'popular' ? 2.2 : 2), item.baseCost * 4.99));
-
-            function calculateProfit(prices) {
-                const revenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
-                const costs = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
-                              dailyRent + taxRate * revenue + otherExpensesRate * revenue;
-                return revenue - costs;
-            }
-
-            let iterations = 0;
-            const maxIterations = 1000;
-            let targetReached = false;
-
-            while (iterations < maxIterations) {
-                const profit = calculateProfit(prices);
-                const currentProfitMargin = profit / prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
-
-                if (currentProfitMargin >= targetProfitMargin) {
-                    targetReached = true;
-                    break;
-                }
-
-                prices = prices.map((price, index) => {
-                    const newPrice = price * (items[index].popularity === 'popular' ? 1.015 : 1.01);
-                    return Math.min(newPrice, items[index].baseCost * 4.99);
-                });
-
-                iterations++;
-            }
+            // Set prices to exactly 5 times the base cost
+            let prices = items.map(item => item.baseCost * 5);
 
             const totalRevenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
             const totalCost = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
@@ -169,19 +137,14 @@
 
             let resultsHtml = '<h2>نتایج</h2>';
             
-            if (!targetReached) {
-                resultsHtml += '<p class="warning">هشدار: حاشیه سود هدف در محدودیت‌های قیمت‌گذاری قابل دستیابی نبود.</p>';
-            }
-
-            resultsHtml += '<table><tr><th>قلم</th><th>هزینه پایه</th><th>قیمت محاسبه شده</th><th>فروش روزانه</th><th>محبوبیت</th><th>درآمد روزانه</th></tr>';
+            resultsHtml += '<table><tr><th>قلم</th><th>هزینه پایه</th><th>قیمت محاسبه شده</th><th>فروش روزانه</th><th>درآمد روزانه</th></tr>';
             for (let i = 0; i < numItems; i++) {
                 const dailyRevenue = prices[i] * items[i].salesPerDay;
                 resultsHtml += `<tr>
                     <td>قلم ${i + 1}</td>
                     <td>$${items[i].baseCost.toFixed(2)}</td>
                     <td>$${prices[i].toFixed(2)}</td>
-                    <td>${items[i].salesPerDay}</td>
-                    <td>${items[i].popularity === 'normal' ? 'معمولی' : 'محبوب'}</td>
+                    <td><span class="sales-number">${items[i].salesPerDay}</span></td>
                     <td>$${dailyRevenue.toFixed(2)}</td>
                 </tr>`;
             }
@@ -190,8 +153,8 @@
             resultsHtml += `<p>درآمد روزانه کل: $${totalRevenue.toFixed(2)}</p>`;
             resultsHtml += `<p>هزینه روزانه کل: $${totalCost.toFixed(2)}</p>`;
             resultsHtml += `<p>سود روزانه: $${profit.toFixed(2)}</p>`;
-            // resultsHtml += `<p>اجاره روزانه: $${dailyRent.toFixed(2)}</p>`;
-            // resultsHtml += `<p>اجاره ماهانه: $${monthlyRent.toFixed(2)}</p>`;
+            resultsHtml += `<p>اجاره روزانه: $${dailyRent.toFixed(2)}</p>`;
+            resultsHtml += `<p>اجاره ماهانه: $${monthlyRent.toFixed(2)}</p>`;
 
             document.getElementById('results').innerHTML = resultsHtml;
         }
