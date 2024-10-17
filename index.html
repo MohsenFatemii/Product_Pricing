@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ماشین حساب پیشرفته قیمت‌گذاری مغازه آبمیوه</title>
+    <title>ماشین حساب قیمت‌گذاری</title>
     <style>
         body {
             font-family: Tahoma, Arial, sans-serif;
@@ -63,7 +63,7 @@
     </style>
 </head>
 <body>
-    <h1>ماشین حساب پیشرفته قیمت‌گذاری مغازه آبمیوه</h1>
+    <h1>ماشین حساب قیمت‌گذاری</h1>
     
     <div class="input-group">
         <label for="numItems">تعداد اقلام:</label>
@@ -110,6 +110,13 @@
             document.getElementById('itemInputs').innerHTML = inputsHtml;
         }
 
+        function calculateInitialPrice(baseCost, taxRate, otherExpensesRate, targetProfitMargin) {
+            // Calculate minimum price needed to cover costs and achieve target profit
+            const costMultiplier = 1 + taxRate + otherExpensesRate;
+            const profitMultiplier = 1 + targetProfitMargin;
+            return baseCost * costMultiplier * profitMultiplier;
+        }
+
         function calculatePrices() {
             const numItems = parseInt(document.getElementById('numItems').value);
             const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
@@ -126,12 +133,49 @@
                 });
             }
 
-            // Set prices to exactly 5 times the base cost
-            let prices = items.map(item => item.baseCost * 5);
+            // Calculate total daily sales volume
+            const totalDailySales = items.reduce((sum, item) => sum + item.salesPerDay, 0);
 
+            // Initialize prices based on costs and target profit
+            let prices = items.map(item => {
+                const basePrice = calculateInitialPrice(item.baseCost, taxRate, otherExpensesRate, targetProfitMargin);
+                
+                // Adjust price based on sales volume (higher volume = slightly lower prices)
+                const volumeDiscount = Math.min(0.15, (item.salesPerDay / totalDailySales) * 0.2);
+                
+                // Add portion of rent to price based on sales proportion
+                const rentPortion = (dailyRent * (item.salesPerDay / totalDailySales)) / item.salesPerDay;
+                
+                return basePrice * (1 - volumeDiscount) + rentPortion;
+            });
+
+            // Adjust prices to ensure overall target profit margin
+            const calculateTotalProfit = (prices) => {
+                const revenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
+                const costs = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
+                            dailyRent + taxRate * revenue + otherExpensesRate * revenue;
+                return revenue - costs;
+            };
+
+            // Fine-tune prices using gradient descent
+            const learningRate = 0.01;
+            const iterations = 100;
+            
+            for (let i = 0; i < iterations; i++) {
+                const currentProfit = calculateTotalProfit(prices);
+                const totalRevenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
+                const currentProfitMargin = currentProfit / totalRevenue;
+                
+                if (Math.abs(currentProfitMargin - targetProfitMargin) < 0.001) break;
+                
+                const adjustment = (currentProfitMargin < targetProfitMargin) ? learningRate : -learningRate;
+                prices = prices.map(price => price * (1 + adjustment));
+            }
+
+            // Calculate final metrics
             const totalRevenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
             const totalCost = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
-                              dailyRent + taxRate * totalRevenue + otherExpensesRate * totalRevenue;
+                            dailyRent + taxRate * totalRevenue + otherExpensesRate * totalRevenue;
             const profit = totalRevenue - totalCost;
             const profitMargin = (profit / totalRevenue) * 100;
 
