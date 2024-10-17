@@ -175,8 +175,9 @@
             // Calculate final metrics
             const totalRevenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
             const totalCost = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
-                            dailyRent + taxRate * totalRevenue + otherExpensesRate * totalRevenue;
-            const profit = totalRevenue - totalCost;
+                            dailyRent;
+            const temp_revenue = totalRevenue - totalCost;
+            const profit = temp_revenue - taxRate * temp_revenue - otherExpensesRate * temp_revenue;
             const profitMargin = (profit / totalRevenue) * 100;
 
             let resultsHtml = '<h2>نتایج</h2>';
