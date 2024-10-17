@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ماشین حساب قیمت‌گذاری</title>
+    <title>Pricing Calculator | ماشین حساب قیمت‌گذاری</title>
     <style>
         body {
             font-family: Tahoma, Arial, sans-serif;
@@ -12,6 +12,12 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+        }
+        body[dir="rtl"] {
+            text-align: right;
+        }
+        body[dir="ltr"] {
+            text-align: left;
         }
         h1, h2 {
             color: #2c3e50;
@@ -26,7 +32,7 @@
         input[type="number"], select {
             width: 100px;
             padding: 5px;
-            margin-right: 10px;
+            margin: 0 10px;
         }
         button {
             background-color: #3498db;
@@ -48,7 +54,7 @@
         th, td {
             border: 1px solid #ddd;
             padding: 8px;
-            text-align: right;
+            text-align: inherit;
         }
         th {
             background-color: #f2f2f2;
@@ -60,69 +66,151 @@
         .sales-number {
             font-weight: bold;
         }
+        #languageSelector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>ماشین حساب قیمت‌گذاری</h1>
-    
-    <div class="input-group">
-        <label for="numItems">تعداد اقلام:</label>
-        <input type="number" id="numItems" min="1" value="1">
-    </div>
-    <div class="input-group">
-        <label for="taxRate">نرخ مالیات (٪):</label>
-        <input type="number" id="taxRate" min="0" max="100" step="0.1" value="30">
-    </div>
-    <div class="input-group">
-        <label for="otherExpensesRate">نرخ سایر هزینه‌ها (٪):</label>
-        <input type="number" id="otherExpensesRate" min="0" max="100" step="0.1" value="10">
-    </div>
-    <div class="input-group">
-        <label for="targetProfitMargin">حاشیه سود هدف (٪):</label>
-        <input type="number" id="targetProfitMargin" min="0" max="100" step="0.1" value="20">
-    </div>
-    <div class="input-group">
-        <label for="rent">اجاره ماهانه:</label>
-        <input type="number" id="rent" min="0" step="0.01" value="60000">
-    </div>
+    <select id="languageSelector" onchange="changeLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="fa">فارسی</option>
+    </select>
 
-    <button onclick="generateInputs()">ایجاد ورودی‌های اقلام</button>
-    
-    <div id="itemInputs"></div>
-    <button onclick="calculatePrices()">محاسبه قیمت‌ها</button>
-    <div id="results"></div>
+    <div id="content"></div>
 
     <script>
+        const translations = {
+            en: {
+                title: "Pricing Calculator",
+                numItems: "Number of Items:",
+                taxRate: "Tax Rate (%):",
+                otherExpensesRate: "Other Expenses Rate (%):",
+                targetProfitMargin: "Target Profit Margin (%):",
+                rent: "Monthly Rent:",
+                generateInputs: "Generate Item Inputs",
+                calculate: "Calculate Prices",
+                itemDetails: "Enter Item Details",
+                baseCost: "Base Cost for Item",
+                dailySales: "Daily Sales for Item",
+                results: "Results",
+                item: "Item",
+                baseCostLabel: "Base Cost",
+                calculatedPrice: "Calculated Price",
+                dailySalesLabel: "Daily Sales",
+                dailyRevenue: "Daily Revenue",
+                totalRevenue: "Total Revenue:",
+                baseCosts: "Base Costs:",
+                dailyRentLabel: "Daily Rent:",
+                tempRevenue: "Revenue (after base costs and rent):",
+                tax: "Tax:",
+                otherExpenses: "Other Expenses:",
+                finalProfit: "Final Profit:",
+                profitMargin: "Profit Margin:"
+            },
+            fa: {
+                title: "ماشین حساب قیمت‌گذاری",
+                numItems: "تعداد اقلام:",
+                taxRate: "نرخ مالیات (٪):",
+                otherExpensesRate: "نرخ سایر هزینه‌ها (٪):",
+                targetProfitMargin: "حاشیه سود هدف (٪):",
+                rent: "اجاره ماهانه:",
+                generateInputs: "ایجاد ورودی‌های اقلام",
+                calculate: "محاسبه قیمت‌ها",
+                itemDetails: "جزئیات اقلام را وارد کنید",
+                baseCost: "هزینه پایه قلم",
+                dailySales: "فروش روزانه قلم",
+                results: "نتایج",
+                item: "قلم",
+                baseCostLabel: "هزینه پایه",
+                calculatedPrice: "قیمت محاسبه شده",
+                dailySalesLabel: "فروش روزانه",
+                dailyRevenue: "درآمد روزانه",
+                totalRevenue: "درآمد کل:",
+                baseCosts: "هزینه‌های پایه:",
+                dailyRentLabel: "اجاره روزانه:",
+                tempRevenue: "درآمد (پس از کسر هزینه‌های پایه و اجاره):",
+                tax: "مالیات:",
+                otherExpenses: "سایر هزینه‌ها:",
+                finalProfit: "سود نهایی:",
+                profitMargin: "حاشیه سود:"
+            }
+        };
+
+        let currentLang = 'en';
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang;
+            document.body.dir = lang === 'fa' ? 'rtl' : 'ltr';
+            renderContent();
+        }
+
+        function renderContent() {
+            const t = translations[currentLang];
+            document.getElementById('content').innerHTML = `
+                <h1>${t.title}</h1>
+                
+                <div class="input-group">
+                    <label for="numItems">${t.numItems}</label>
+                    <input type="number" id="numItems" min="1" value="1">
+                </div>
+                <div class="input-group">
+                    <label for="taxRate">${t.taxRate}</label>
+                    <input type="number" id="taxRate" min="0" max="100" step="0.1" value="30">
+                </div>
+                <div class="input-group">
+                    <label for="otherExpensesRate">${t.otherExpensesRate}</label>
+                    <input type="number" id="otherExpensesRate" min="0" max="100" step="0.1" value="10">
+                </div>
+                <div class="input-group">
+                    <label for="targetProfitMargin">${t.targetProfitMargin}</label>
+                    <input type="number" id="targetProfitMargin" min="0" max="100" step="0.1" value="20">
+                </div>
+                <div class="input-group">
+                    <label for="rent">${t.rent}</label>
+                    <input type="number" id="rent" min="0" step="0.01" value="60000">
+                </div>
+
+                <button onclick="generateInputs()">${t.generateInputs}</button>
+                
+                <div id="itemInputs"></div>
+                <button onclick="calculatePrices()">${t.calculate}</button>
+                <div id="results"></div>
+            `;
+        }
+
         function generateInputs() {
+            const t = translations[currentLang];
             const numItems = parseInt(document.getElementById('numItems').value);
-            let inputsHtml = '<h2>جزئیات اقلام را وارد کنید</h2>';
+            let inputsHtml = `<h2>${t.itemDetails}</h2>`;
+            
             for (let i = 1; i <= numItems; i++) {
                 inputsHtml += `
                 <div class="input-group">
-                    <label for="cost${i}">هزینه پایه قلم ${i}:</label>
+                    <label for="cost${i}">${t.baseCost} ${i}:</label>
                     <input type="number" id="cost${i}" min="0" step="0.01">
                 </div>
                 <div class="input-group">
-                    <label for="sales${i}">فروش روزانه قلم ${i}:</label>
+                    <label for="sales${i}">${t.dailySales} ${i}:</label>
                     <input type="number" id="sales${i}" min="0" value="100">
                 </div>`;
             }
             document.getElementById('itemInputs').innerHTML = inputsHtml;
         }
-        
+
         function calculateTotalProfit(prices, items, dailyRent, taxRate, otherExpensesRate) {
-            // Calculate total revenue
             const totalRevenue = prices.reduce((sum, price, index) => 
                 sum + price * items[index].salesPerDay, 0);
             
-            // Calculate base costs
             const totalBaseCosts = items.reduce((sum, item) => 
                 sum + item.baseCost * item.salesPerDay, 0);
             
-            // Calculate temporary revenue after subtracting costs and rent
             const tempRevenue = totalRevenue - totalBaseCosts - dailyRent;
             
-            // Calculate final profit after tax and other expenses
             const taxAmount = tempRevenue * taxRate;
             const otherExpenses = tempRevenue * otherExpensesRate;
             const finalProfit = tempRevenue - taxAmount - otherExpenses;
@@ -138,12 +226,12 @@
         }
 
         function calculateInitialPrice(baseCost, taxRate, otherExpensesRate, targetProfitMargin) {
-            // Modified to account for new profit calculation method
             const baseMultiplier = 1 / (1 - taxRate - otherExpensesRate);
             return baseCost * baseMultiplier * (1 + targetProfitMargin);
         }
 
         function calculatePrices() {
+            const t = translations[currentLang];
             const numItems = parseInt(document.getElementById('numItems').value);
             const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
             const otherExpensesRate = parseFloat(document.getElementById('otherExpensesRate').value) / 100;
@@ -159,10 +247,8 @@
                 });
             }
 
-            // Calculate total daily sales volume
             const totalDailySales = items.reduce((sum, item) => sum + item.salesPerDay, 0);
 
-            // Initialize prices
             let prices = items.map(item => {
                 const basePrice = calculateInitialPrice(item.baseCost, taxRate, otherExpensesRate, targetProfitMargin);
                 const volumeDiscount = Math.min(0.15, (item.salesPerDay / totalDailySales) * 0.2);
@@ -170,7 +256,6 @@
                 return basePrice * (1 - volumeDiscount) + rentPortion;
             });
 
-            // Fine-tune prices using gradient descent
             const learningRate = 0.01;
             const iterations = 100;
             
@@ -187,7 +272,6 @@
                 prices = prices.map(price => price * (1 + adjustment));
             }
 
-            // Calculate final metrics for display
             const {
                 finalProfit,
                 totalRevenue,
@@ -199,13 +283,21 @@
 
             const profitMargin = (finalProfit / totalRevenue) * 100;
 
-            let resultsHtml = '<h2>نتایج</h2>';
+            let resultsHtml = `<h2>${t.results}</h2>`;
             
-            resultsHtml += '<table><tr><th>قلم</th><th>هزینه پایه</th><th>قیمت محاسبه شده</th><th>فروش روزانه</th><th>درآمد روزانه</th></tr>';
+            resultsHtml += `<table>
+                <tr>
+                    <th>${t.item}</th>
+                    <th>${t.baseCostLabel}</th>
+                    <th>${t.calculatedPrice}</th>
+                    <th>${t.dailySalesLabel}</th>
+                    <th>${t.dailyRevenue}</th>
+                </tr>`;
+                
             for (let i = 0; i < numItems; i++) {
                 const dailyRevenue = prices[i] * items[i].salesPerDay;
                 resultsHtml += `<tr>
-                    <td>قلم ${i + 1}</td>
+                    <td>${t.item} ${i + 1}</td>
                     <td>$${items[i].baseCost.toFixed(2)}</td>
                     <td>$${prices[i].toFixed(2)}</td>
                     <td><span class="sales-number">${items[i].salesPerDay}</span></td>
@@ -213,17 +305,23 @@
                 </tr>`;
             }
             resultsHtml += '</table>';
-            resultsHtml += `<p>درآمد کل: $${totalRevenue.toFixed(2)}</p>`;
-            resultsHtml += `<p>هزینه‌های پایه: $${totalBaseCosts.toFixed(2)}</p>`;
-            resultsHtml += `<p>اجاره روزانه: $${dailyRent.toFixed(2)}</p>`;
-            resultsHtml += `<p>درآمد موقت (پس از کسر هزینه‌های پایه و اجاره): $${tempRevenue.toFixed(2)}</p>`;
-            resultsHtml += `<p>مالیات: $${taxAmount.toFixed(2)}</p>`;
-            resultsHtml += `<p>سایر هزینه‌ها: $${otherExpenses.toFixed(2)}</p>`;
-            resultsHtml += `<p>سود نهایی: $${finalProfit.toFixed(2)}</p>`;
-            resultsHtml += `<p>حاشیه سود: ${profitMargin.toFixed(2)}٪</p>`;
+            
+            resultsHtml += `
+                <p>${t.totalRevenue} $${totalRevenue.toFixed(2)}</p>
+                <p>${t.baseCosts} $${totalBaseCosts.toFixed(2)}</p>
+                <p>${t.dailyRentLabel} $${dailyRent.toFixed(2)}</p>
+                <p>${t.tempRevenue} $${tempRevenue.toFixed(2)}</p>
+                <p>${t.tax} $${taxAmount.toFixed(2)}</p>
+                <p>${t.otherExpenses} $${otherExpenses.toFixed(2)}</p>
+                <p>${t.finalProfit} $${finalProfit.toFixed(2)}</p>
+                <p>${t.profitMargin} ${profitMargin.toFixed(2)}%</p>
+            `;
 
             document.getElementById('results').innerHTML = resultsHtml;
         }
+
+        // Initialize the page in English
+        renderContent();
     </script>
 </body>
 </html>
