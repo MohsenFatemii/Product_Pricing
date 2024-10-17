@@ -154,7 +154,7 @@
                 const total_revenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
                 const costs = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
                             dailyRent;
-                const temp_revenue = total_revenue - cost;
+                const temp_revenue = total_revenue - costs;
                 const temp_profit = temp_revenue - taxRate * temp_revenue + otherExpensesRate * temp_revenue;
                 return temp_profit;
             };
