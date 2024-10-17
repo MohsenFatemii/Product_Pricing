@@ -151,10 +151,12 @@
 
             // Adjust prices to ensure overall target profit margin
             const calculateTotalProfit = (prices) => {
-                const revenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
+                const total_revenue = prices.reduce((sum, price, index) => sum + price * items[index].salesPerDay, 0);
                 const costs = items.reduce((sum, item) => sum + item.baseCost * item.salesPerDay, 0) + 
-                            dailyRent + taxRate * revenue + otherExpensesRate * revenue;
-                return revenue - costs;
+                            dailyRent;
+                const temp_revenue = total_revenue - cost;
+                const temp_profit = temp_revenue - taxRate * temp_revenue + otherExpensesRate * temp_revenue;
+                return temp_profit;
             };
 
             // Fine-tune prices using gradient descent
@@ -178,7 +180,7 @@
                             dailyRent;
             const temp_revenue = totalRevenue - totalCost;
             const profit = temp_revenue - taxRate * temp_revenue - otherExpensesRate * temp_revenue;
-            const profitMargin = (profit / totalRevenue) * 100;
+            const profitMargin = (profit / temp_revenue) * 100;
 
             let resultsHtml = '<h2>نتایج</h2>';
             
